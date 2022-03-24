@@ -49,7 +49,7 @@ async function createPost({ authorId, title, content }) {
       rows: [post],
     } = await client.query(
       `
-        INSERT INTO users(authorId, title, content) 
+        INSERT INTO posts("authorId", title, content) 
         VALUES ($1, $2, $3)
         `,
       [authorId, title, content]
@@ -119,7 +119,7 @@ async function updatePost(id, { title, content, active }) {
 
 async function getPostsByUser(userId) {
   try {
-    const { rows } = client.query(`
+    const { rows } = await client.query(`
         SELECT * FROM posts
         WHERE "authorId"=${userId};
       `);
@@ -130,7 +130,25 @@ async function getPostsByUser(userId) {
   }
 }
 
-// async function getUserById(userId)
+async function getUserById(userId) {
+  try {
+    const {
+      rows: [user],
+    } = await client.query(`
+      SELECT * FROM users
+      WHERE id = ${userId};
+    `);
+    if (!user) {
+      return null;
+    }
+    delete user.password;
+    user.posts = await getPostsByUser(userId);
+    console.log(user, "...checking for getUserById");
+    return user;
+  } catch (error) {
+    throw error;
+  }
+}
 
 module.exports = {
   client,
@@ -140,5 +158,6 @@ module.exports = {
   createPost,
   getAllPosts,
   getPostsByUser,
-  //   updatePost,
+  getUserById,
+  updatePost,
 };
